@@ -14,9 +14,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install comfy-cli
 RUN pip install --no-cache-dir comfy-cli
 
-# Install custom nodes essentiels
-RUN comfy-node-install comfyui-kjnodes && \
-    comfy-node-install comfyui-videohelpersuite
+
+# Install KJNodes (clone direct + requirements)
+RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes/ComfyUI-KJNodes && \
+    pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-KJNodes/requirements.txt
+
+# Install VideoHelperSuite (clone direct + requirements)
+RUN git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git /comfyui/custom_nodes/ComfyUI-VideoHelperSuite && \
+    pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-VideoHelperSuite/requirements.txt
 
 # Clean
 RUN pip cache purge
