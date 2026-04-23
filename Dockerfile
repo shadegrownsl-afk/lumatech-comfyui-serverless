@@ -1,4 +1,4 @@
-# Base image RunPod worker-comfyui (a le handler et runpod SDK)
+# Base image RunPod worker-comfyui
 FROM runpod/worker-comfyui:5.7.0-base
 
 # Remplace ComfyUI par la version 0.18.2
@@ -7,26 +7,50 @@ RUN rm -rf /comfyui && \
     cd /comfyui && \
     git checkout v0.18.2
 
-# Install dépendances ComfyUI 0.18.2
 WORKDIR /comfyui
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install comfy-cli
-RUN pip install --no-cache-dir comfy-cli
+# ==== CUSTOM NODES ====
 
+# ComfyUI Manager (safety net, pour ajouter des nodes à chaud)
+RUN git clone https://github.com/Comfy-Org/ComfyUI-Manager.git /comfyui/custom_nodes/ComfyUI-Manager && \
+    pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-Manager/requirements.txt
 
-# Install KJNodes (clone direct + requirements)
+# KJNodes (ExtractLastImage, GetImageRangeFromBatch)
 RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes/ComfyUI-KJNodes && \
     pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-KJNodes/requirements.txt
 
-# Install VideoHelperSuite (clone direct + requirements)
+# VideoHelperSuite (VHS_Load/Combine, audio VHS)
 RUN git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git /comfyui/custom_nodes/ComfyUI-VideoHelperSuite && \
     pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-VideoHelperSuite/requirements.txt
 
-# Clean
+# Bjornulf (ConcatVideos ffmpeg)
+RUN git clone https://github.com/justUmen/Bjornulf_custom_nodes.git /comfyui/custom_nodes/Bjornulf_custom_nodes && \
+    (pip install --no-cache-dir -r /comfyui/custom_nodes/Bjornulf_custom_nodes/requirements.txt || true)
+
+# GGUF (Qwen Image Edit 2509, modèles quantized)
+RUN git clone https://github.com/city96/ComfyUI-GGUF.git /comfyui/custom_nodes/ComfyUI-GGUF && \
+    pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-GGUF/requirements.txt
+
+# WanVideoWrapper (InfiniteTalk lipsync)
+RUN git clone https://github.com/kijai/ComfyUI-WanVideoWrapper.git /comfyui/custom_nodes/ComfyUI-WanVideoWrapper && \
+    pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-WanVideoWrapper/requirements.txt
+
+# Frame Interpolation RIFE (transitions fluides entre clips, 25→50fps)
+RUN git clone https://github.com/Fannovel16/ComfyUI-Frame-Interpolation.git /comfyui/custom_nodes/ComfyUI-Frame-Interpolation && \
+    (pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-Frame-Interpolation/requirements-no-cupy.txt || \
+     pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-Frame-Interpolation/requirements.txt || true)
+
+# Video Upscale WithModel (RealESRGAN + OpenModelDB models)
+RUN git clone https://github.com/ShmuelRonen/ComfyUI-VideoUpscale_WithModel.git /comfyui/custom_nodes/ComfyUI-VideoUpscale_WithModel
+
+# ComfyUI_essentials (toolkit : resize, crop, LUT, blend, etc.)
+RUN git clone https://github.com/cubiq/ComfyUI_essentials.git /comfyui/custom_nodes/ComfyUI_essentials && \
+    (pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI_essentials/requirements.txt || true)
+
 RUN pip cache purge
 
-# Script de démarrage qui symlink les modèles du Network Volume
+# Script de démarrage avec symlink des modèles
 RUN echo '#!/bin/bash\n\
 echo "=== Symlinking models from Network Volume ==="\n\
 if [ -d "/runpod-volume/runpod-slim/ComfyUI/models" ]; then\n\
@@ -42,13 +66,10 @@ if [ -d "/runpod-volume/runpod-slim/ComfyUI/models" ]; then\n\
   done\n\
   echo "=== Symlink complete ==="\n\
 else\n\
-  echo "WARNING: Network Volume not found at /runpod-volume/runpod-slim/ComfyUI/models"\n\
+  echo "WARNING: Network Volume not found"\n\
 fi\n\
 exec /start.sh' > /custom-start.sh && \
     chmod +x /custom-start.sh
 
-# Working dir
 WORKDIR /
-
-# Utiliser notre script custom au lieu de /start.sh
 CMD ["/custom-start.sh"]
