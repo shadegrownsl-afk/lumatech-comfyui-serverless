@@ -1,7 +1,7 @@
 # Base image RunPod worker-comfyui (a le handler et runpod SDK)
 FROM runpod/worker-comfyui:5.7.0-base
 
-# Remplace ComfyUI par la version 0.18.2 (celle de ton Network Volume)
+# Remplace ComfyUI par la version 0.18.2
 RUN rm -rf /comfyui && \
     git clone https://github.com/Comfy-Org/ComfyUI.git /comfyui && \
     cd /comfyui && \
@@ -11,18 +11,39 @@ RUN rm -rf /comfyui && \
 WORKDIR /comfyui
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install comfy-cli (pour gérer les custom nodes facilement)
+# Install comfy-cli
 RUN pip install --no-cache-dir comfy-cli
 
-# Install custom nodes essentiels pour ton workflow LTX-2.3
+# Install custom nodes essentiels
 RUN comfy-node-install comfyui-kjnodes && \
     comfy-node-install comfyui-videohelpersuite
 
 # Clean
 RUN pip cache purge
 
-# Working dir pour handler
+# Script de démarrage qui symlink les modèles du Network Volume
+RUN echo '#!/bin/bash\n\
+echo "=== Symlinking models from Network Volume ==="\n\
+if [ -d "/runpod-volume/runpod-slim/ComfyUI/models" ]; then\n\
+  for dir in /runpod-volume/runpod-slim/ComfyUI/models/*/; do\n\
+    name=$(basename "$dir")\n\
+    mkdir -p "/comfyui/models/$name"\n\
+    for file in "$dir"*; do\n\
+      if [ -e "$file" ]; then\n\
+        ln -sf "$file" "/comfyui/models/$name/$(basename $file)"\n\
+      fi\n\
+    done\n\
+    echo "Linked models/$name"\n\
+  done\n\
+  echo "=== Symlink complete ==="\n\
+else\n\
+  echo "WARNING: Network Volume not found at /runpod-volume/runpod-slim/ComfyUI/models"\n\
+fi\n\
+exec /start.sh' > /custom-start.sh && \
+    chmod +x /custom-start.sh
+
+# Working dir
 WORKDIR /
 
-# Lancement standard worker-comfyui
-CMD ["/start.sh"]
+# Utiliser notre script custom au lieu de /start.sh
+CMD ["/custom-start.sh"]
