@@ -24,9 +24,10 @@ RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /comfyui/custom_nodes
 RUN git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git /comfyui/custom_nodes/ComfyUI-VideoHelperSuite && \
     pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-VideoHelperSuite/requirements.txt
 
-# Bjornulf (ConcatVideos ffmpeg)
+# Bjornulf (ConcatVideos ffmpeg) - install soundfile manually (missing from requirements.txt)
 RUN git clone https://github.com/justUmen/Bjornulf_custom_nodes.git /comfyui/custom_nodes/Bjornulf_custom_nodes && \
-    (pip install --no-cache-dir -r /comfyui/custom_nodes/Bjornulf_custom_nodes/requirements.txt || true)
+    (pip install --no-cache-dir -r /comfyui/custom_nodes/Bjornulf_custom_nodes/requirements.txt || true) && \
+    pip install --no-cache-dir soundfile
 
 # GGUF (Qwen Image Edit 2509, modèles quantized)
 RUN git clone https://github.com/city96/ComfyUI-GGUF.git /comfyui/custom_nodes/ComfyUI-GGUF && \
