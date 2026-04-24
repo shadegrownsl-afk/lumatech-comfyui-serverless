@@ -49,6 +49,9 @@ RUN git clone https://github.com/ShmuelRonen/ComfyUI-VideoUpscale_WithModel.git 
 RUN git clone https://github.com/cubiq/ComfyUI_essentials.git /comfyui/custom_nodes/ComfyUI_essentials && \
     (pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI_essentials/requirements.txt || true)
 
+# Lumatech custom nodes
+RUN git clone https://github.com/shadegrownsl-afk/lumatech-comfyui-nodes.git /comfyui/custom_nodes/lumatech-comfyui-nodes
+
 RUN pip cache purge
 
 # Script de démarrage avec symlink des modèles
